@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import '../services/openai_service.dart';
 
@@ -33,7 +32,6 @@ class _TranslationPageState extends State<TranslationPage> {
     'Italian',
   ];
 
-  // Exclude 'Auto' from target languages
   List<String> get _targetLanguages => _languages.where((l) => l != 'Auto').toList();
 
   Future<void> _handleTranslate() async {
@@ -45,22 +43,11 @@ class _TranslationPageState extends State<TranslationPage> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final apiKey = prefs.getString('openai_api_key') ?? '';
-
-      if (apiKey.isEmpty) {
-        if (mounted) {
-          _showApiKeyAlert();
-        }
-        setState(() => _isLoading = false);
-        return;
-      }
-
+      // Call the service without passing an API key manually
       final result = await _openAIService.translate(
         text: _inputController.text,
         sourceLang: _sourceLang,
         targetLang: _targetLang,
-        apiKey: apiKey,
       );
 
       setState(() {
@@ -77,29 +64,6 @@ class _TranslationPageState extends State<TranslationPage> {
     }
   }
 
-  void _showApiKeyAlert() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('API Key Missing'),
-        content: const Text('Please set your OpenAI API Key in Settings to use the translation feature.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/settings');
-            },
-            child: const Text('Go to Settings'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _copyToClipboard(String text) {
     if (text.isNotEmpty) {
       Clipboard.setData(ClipboardData(text: text));
@@ -114,12 +78,7 @@ class _TranslationPageState extends State<TranslationPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Translator'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
-          ),
-        ],
+        // Settings button removed
       ),
       body: Column(
         children: [

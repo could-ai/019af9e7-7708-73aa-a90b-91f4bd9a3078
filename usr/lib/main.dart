@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/translation_page.dart';
-import 'screens/settings_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Supabase
+  // TODO: Replace with your actual Supabase URL and Anon Key after connecting a project
+  try {
+    await Supabase.initialize(
+      url: 'https://your-project-url.supabase.co',
+      anonKey: 'your-anon-key',
+    );
+  } catch (e) {
+    // Handle initialization error or ignore if just previewing UI
+    debugPrint('Supabase initialization failed: $e');
+  }
+
   runApp(const MyApp());
 }
 
@@ -21,7 +35,6 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const TranslationPage(),
-        '/settings': (context) => const SettingsPage(),
       },
     );
   }

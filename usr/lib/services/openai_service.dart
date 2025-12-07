@@ -1,53 +1,38 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OpenAIService {
-  static const String _baseUrl = 'https://api.openai.com/v1/chat/completions';
-
   Future<String> translate({
     required String text,
     required String targetLang,
-    required String apiKey,
     String? sourceLang,
   }) async {
-    if (apiKey.isEmpty) {
-      throw Exception('Please set your OpenAI API Key in Settings.');
-    }
-
     try {
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $apiKey',
+      // Call the Supabase Edge Function named 'translate'
+      final response = await Supabase.instance.functions.invoke(
+        'translate',
+        body: {
+          'text': text,
+          'sourceLang': sourceLang,
+          'targetLang': targetLang,
         },
-        body: jsonEncode({
-          'model': 'gpt-3.5-turbo',
-          'messages': [
-            {
-              'role': 'system',
-              'content': 'You are a helpful translation assistant. Translate the following text ${sourceLang != null && sourceLang != "Auto" ? "from $sourceLang " : ""}to $targetLang. Only return the translated text, no explanations.'
-            },
-            {
-              'role': 'user',
-              'content': text
-            }
-          ],
-          'temperature': 0.3,
-        }),
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        if (data['choices'] != null && data['choices'].isNotEmpty) {
-          return data['choices'][0]['message']['content'].trim();
-        }
-        return 'No translation returned.';
-      } else {
-        final errorData = jsonDecode(response.body);
-        throw Exception('Error: ${errorData['error']['message'] ?? response.reasonPhrase}');
+      final data = response.data;
+      
+      if (data != null && data['choices'] != null && data['choices'].isNotEmpty) {
+        return data['choices'][0]['message']['content'].trim();
       }
+      
+      if (data != null && data['error'] != null) {
+        throw Exception(data['error']);
+      }
+
+      return 'No translation returned.';
     } catch (e) {
+      // If Supabase is not initialized or function fails
+      if (e.toString().contains('Supabase not initialized')) {
+        throw Exception('Please connect a Supabase project to enable translation.');
+      }
       throw Exception('Failed to translate: $e');
     }
   }
